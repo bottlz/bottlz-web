@@ -1,0 +1,16 @@
+name: CI Check
+
+on: push
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - name: Install
+        run: yarn
+      - name: Lint
+        run: yarn lint:check
+      - name: Format
+        run: yarn format:check
