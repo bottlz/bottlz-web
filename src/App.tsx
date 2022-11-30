@@ -1,12 +1,38 @@
-import { Box, Button } from "@mui/material";
-import { useState } from "react";
+import { Box } from "@mui/material";
+import { useEffect, useState } from "react";
+import Map from "react-map-gl";
+
+import "mapbox-gl/dist/mapbox-gl.css";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [viewState, setViewState] = useState({
+    longitude: -100,
+    latitude: 40,
+    zoom: 3.5,
+  });
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((position) =>
+      setViewState({
+        longitude: position.coords.longitude,
+        latitude: position.coords.latitude,
+        zoom: 14,
+      })
+    );
+  }, []);
 
   return (
-    <Box>
-      <Button onClick={() => setCount(count + 1)}>{count}</Button>
+    <Box
+      sx={{
+        display: "flex",
+        height: window.innerHeight,
+      }}
+    >
+      <Map
+        {...viewState}
+        onMove={(evt) => setViewState(evt.viewState)}
+        mapStyle="mapbox://styles/mapbox/streets-v12"
+      ></Map>
     </Box>
   );
 }
