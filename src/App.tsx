@@ -7,6 +7,14 @@ import { Bottle } from "./types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 const BASE_URL = "https://bottlz.azurewebsites.net";
+const COLORS = [
+  "#FF0000",
+  "#FFFF00",
+  "#00FF00",
+  "#00FFFF",
+  "#0000FF",
+  "#FF00FF",
+];
 
 function App() {
   const [viewState, setViewState] = useState({
@@ -34,9 +42,9 @@ function App() {
 
   const routeCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
-    features: bottles.map((bottle) => ({
+    features: bottles.map((bottle, index) => ({
       type: "Feature",
-      properties: { color: "#F7455D" },
+      properties: { color: COLORS[index % COLORS.length] },
       geometry: {
         type: "LineString",
         coordinates: bottle.routes.flatMap((route) => route.route),
