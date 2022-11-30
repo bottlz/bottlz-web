@@ -4,6 +4,8 @@ import Map from "react-map-gl";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+
 function App() {
   const [viewState, setViewState] = useState({
     longitude: -100,
@@ -32,6 +34,7 @@ function App() {
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         mapStyle="mapbox://styles/mapbox/streets-v12"
+        mapboxAccessToken={MAPBOX_TOKEN}
       ></Map>
     </Box>
   );
