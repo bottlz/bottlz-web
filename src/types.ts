@@ -1,6 +1,6 @@
 export type Bottle = {
   id: string;
-  created: number;
+  created: Date;
   origin: GeoPoint;
   endpoint: GeoPoint;
   routes: Route[];
@@ -8,10 +8,22 @@ export type Bottle = {
 
 export type Route = {
   distance: number;
-  route: number[][];
+  route: Point[];
 };
+
+export type Point = [number, number];
 
 type GeoPoint = {
   type: string;
-  coordinates: number[];
+  coordinates: Point;
+};
+
+export type GetBottlesResponse = {
+  bottles: {
+    id: string;
+    created: number;
+    origin: GeoPoint;
+    endpoint: GeoPoint;
+    routes: Route[];
+  }[];
 };
