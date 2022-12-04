@@ -70,10 +70,22 @@ function App() {
     return () => clearTimeout(timer);
   });
 
+  /** Returns true if the bottle has no route for it to be on at date */
+  const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
+    const coveredDistance =
+      ((date.getTime() - bottle.created.getTime()) / 1000) * BOTTLE_SPEED;
+    const totalRouteDistance = bottle.routes
+      .map((route) => route.distance)
+      .reduce((a, b) => a + b);
+    return coveredDistance >= totalRouteDistance;
+  };
+
   /** The current interpolated location of a bottle */
   const currentLocation = (bottle: Bottle, date: Date): Point => {
     if (bottle.routes.length === 0) {
       return bottle.origin.coordinates;
+    } else if (isOutOfRoutes(bottle, date)) {
+      return bottle.endpoint.coordinates;
     }
 
     const coveredDistance =
