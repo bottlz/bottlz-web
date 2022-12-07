@@ -137,7 +137,14 @@ function App() {
         },
         body: JSON.stringify({ location: { lon, lat } }),
       })
-        .then(() => setCreatingBottle(false))
+        .then((res) => res.json())
+        .then((json) => {
+          const newBottleId: string = json.id;
+          setCreatingBottle(false);
+          setSelectedId(newBottleId);
+          setDrawingActive(true);
+          setIsDrawingNew(true);
+        })
         .catch((err) => {
           console.log(err);
           setCreatingBottle(false);
@@ -257,6 +264,7 @@ function App() {
   };
 
   const [drawingActive, setDrawingActive] = useState(false);
+  const [isDrawingNew, setIsDrawingNew] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawPos = useRef({ x: 0, y: 0 });
 
@@ -415,9 +423,11 @@ function App() {
           setDrawingActive(false);
         }}
       >
-        {selectedBottle && (
+        {selectedId && (
           <>
-            <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
+            <DialogTitle>
+              {isDrawingNew ? "Create" : "View/Edit"} ID: {selectedId}
+            </DialogTitle>
             <DialogContent>
               <canvas
                 ref={canvas}
