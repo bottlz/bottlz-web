@@ -282,7 +282,7 @@ function App() {
       }
     };
     img.crossOrigin = "Anonymous";
-    img.src = `https://bottlz.azurewebsites.net/drawings/get/${bottle.id}`;
+    img.src = `${BASE_URL}/drawings/get/${bottle.id}?time=${Date.now()}`;
   };
 
   const [savingDrawing, setSavingDrawing] = useState(false);
