@@ -1,4 +1,11 @@
-import { Box, SvgIcon, SvgIconProps } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  FormControlLabel,
+  SvgIcon,
+  SvgIconProps,
+  Typography,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import Map, { Layer, Marker, Source } from "react-map-gl";
 
@@ -54,14 +61,17 @@ function App() {
   useEffect(() => {
     fetch(`${BASE_URL}/bottles/getAll`)
       .then((res) => res.json())
-      .then((json: GetBottlesResponse) =>
+      .then((json: GetBottlesResponse) => {
         setBottles(
           json.bottles.map((bottle) => ({
             ...bottle,
             created: new Date(bottle.created),
           }))
-        )
-      );
+        );
+        setIsVisible(
+          Object.fromEntries(json.bottles.map((bottle) => [bottle.id, true]))
+        );
+      });
   }, []);
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -69,6 +79,8 @@ function App() {
     const timer = setTimeout(() => setCurrentDate(new Date()), 100);
     return () => clearTimeout(timer);
   });
+
+  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
 
   /** Returns true if the bottle has no route for it to be on at date */
   const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
@@ -154,14 +166,17 @@ function App() {
 
   const routeCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
-    features: bottles.map((bottle, index) => ({
-      type: "Feature",
-      properties: { color: COLORS[index % COLORS.length] },
-      geometry: {
-        type: "LineString",
-        coordinates: bottle.routes.flatMap((route) => route.route),
-      },
-    })),
+    features: bottles
+      .map((bottle, index) => [bottle, index] as [Bottle, number])
+      .filter(([bottle]) => isVisible[bottle.id])
+      .map(([bottle, originalIndex]) => ({
+        type: "Feature",
+        properties: { color: COLORS[originalIndex % COLORS.length] },
+        geometry: {
+          type: "LineString",
+          coordinates: bottle.routes.flatMap((route) => route.route),
+        },
+      })),
   };
 
   return (
@@ -184,26 +199,63 @@ function App() {
             paint={{ "line-width": 3, "line-color": ["get", "color"] }}
           />
         </Source>
-        {bottles.map((bottle) => {
-          const location = currentLocation(bottle, currentDate);
-          return (
-            <Marker
-              key={bottle.id}
-              longitude={location[0]}
-              latitude={location[1]}
-            >
-              <BottleIcon
-                sx={{
-                  fontSize: 30,
-                  backgroundColor: "white",
-                  borderRadius: 15,
-                  boxShadow: "0 0 4px gray",
-                }}
-              />
-            </Marker>
-          );
-        })}
+        {bottles
+          .filter((bottle) => isVisible[bottle.id])
+          .map((bottle) => {
+            const location = currentLocation(bottle, currentDate);
+            return (
+              <Marker
+                key={bottle.id}
+                longitude={location[0]}
+                latitude={location[1]}
+              >
+                <BottleIcon
+                  sx={{
+                    fontSize: 30,
+                    backgroundColor: "white",
+                    borderRadius: 15,
+                    boxShadow: "0 0 4px gray",
+                  }}
+                />
+              </Marker>
+            );
+          })}
       </Map>
+      <Box display="flex" flexDirection="column" p={2} overflow="scroll">
+        <Typography variant="h6" mb={1}>
+          Bottle Count: {bottles.length}
+        </Typography>
+        <Typography>Display Bottles</Typography>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={Object.values(isVisible).every((visible) => visible)}
+              onChange={(e) =>
+                setIsVisible(
+                  Object.fromEntries(
+                    Object.keys(isVisible).map((id) => [id, e.target.checked])
+                  )
+                )
+              }
+            />
+          }
+          label="All Bottles"
+        />
+        {Object.entries(isVisible).map(([id, visible]) => (
+          <FormControlLabel
+            key={id}
+            control={
+              <Checkbox
+                checked={visible}
+                onChange={(e) =>
+                  setIsVisible({ ...isVisible, [id]: e.target.checked })
+                }
+              />
+            }
+            label={id}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
