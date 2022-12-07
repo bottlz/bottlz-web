@@ -178,8 +178,6 @@ function App() {
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selectedBottle =
-    bottles.find((bottle) => bottle.id === selectedId) ?? null;
 
   /** Returns true if the bottle has no route for it to be on at date */
   const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
@@ -285,6 +283,33 @@ function App() {
     };
     img.crossOrigin = "Anonymous";
     img.src = `https://bottlz.azurewebsites.net/drawings/get/${bottle.id}`;
+  };
+
+  const [savingDrawing, setSavingDrawing] = useState(false);
+
+  const createDrawing = async () => {
+    if (savingDrawing) return;
+    setSavingDrawing(true);
+    canvas.current?.toBlob((blob) => {
+      if (!blob) {
+        console.error("Failed to create blob from canvas");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("drawing", blob);
+      fetch(`${BASE_URL}/drawings/create/${selectedId}`, {
+        method: "post",
+        body: formData,
+      })
+        .then(() => {
+          setSavingDrawing(false);
+          setDrawingActive(false);
+        })
+        .catch((err) => {
+          console.log(err);
+          setSavingDrawing(false);
+        });
+    });
   };
 
   const routeCollection: GeoJSON.FeatureCollection = {
@@ -435,7 +460,7 @@ function App() {
                 height={500}
                 onMouseMove={(e) => {
                   const ctx = canvas.current?.getContext("2d");
-                  if (e.buttons !== 1 || !ctx) return;
+                  if (!drawingActive || e.buttons !== 1 || !ctx) return;
                   ctx.beginPath();
                   ctx.lineWidth = 5;
                   ctx.lineCap = "round";
@@ -451,7 +476,16 @@ function App() {
             </DialogContent>
             <DialogActions>
               {drawingActive ? (
-                <Button onClick={() => setDrawingActive(false)}>Save</Button>
+                <LoadingButton
+                  loading={savingDrawing}
+                  onClick={() => {
+                    if (isDrawingNew) {
+                      createDrawing();
+                    }
+                  }}
+                >
+                  Save
+                </LoadingButton>
               ) : (
                 <Button onClick={() => setDrawingActive(true)}>Edit</Button>
               )}
