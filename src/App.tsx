@@ -63,6 +63,20 @@ function App() {
     );
   }, []);
 
+  const [client, setClient] = useState<WebSocket | null>(null);
+  useEffect(() => {
+    fetch(`${BASE_URL}/bottles/token`)
+      .then((res) => res.json())
+      .then(({ url }) => {
+        if (url) {
+          setClient(new WebSocket(url));
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
+
   const [bottles, setBottles] = useState<Bottle[]>([]);
   useEffect(() => {
     fetch(`${BASE_URL}/bottles/getAll`)
@@ -79,6 +93,36 @@ function App() {
         );
       });
   }, []);
+
+  useEffect(() => {
+    if (client == null) return;
+    client.onmessage = ({ data }) => {
+      if (!data) return;
+      const bottle = JSON.parse(data);
+      updateBottles({ ...bottle, created: new Date(bottle.created) });
+    };
+  }, [client, bottles]);
+
+  const updateBottles = (newBottle: Bottle) => {
+    const { id } = newBottle;
+    if (!id) {
+      console.log("missing id in pubsub data");
+      return;
+    }
+    const bottleExists = bottles.some(({ id: bottleId }) => id === bottleId);
+    if (!bottleExists) {
+      setBottles([...bottles, newBottle]);
+      setIsVisible({ ...isVisible, [id]: true });
+    } else {
+      setBottles(
+        bottles.map((bottle) => {
+          if (bottle.id === id) {
+            return newBottle;
+          } else return bottle;
+        })
+      );
+    }
+  };
 
   const [creatingBottle, setCreatingBottle] = useState(false);
   const createBottle = async () => {
