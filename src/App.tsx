@@ -297,10 +297,15 @@ function App() {
       }
       const formData = new FormData();
       formData.append("drawing", blob);
-      fetch(`${BASE_URL}/drawings/${isDrawingNew ? "create" : "update"}/${selectedId}`, {
-        method: "post",
-        body: formData,
-      })
+      fetch(
+        `${BASE_URL}/drawings/${
+          isDrawingNew ? "create" : "update"
+        }/${selectedId}`,
+        {
+          method: "post",
+          body: formData,
+        }
+      )
         .then(() => {
           setSavingDrawing(false);
           setDrawingActive(false);
