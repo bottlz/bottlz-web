@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Map, { Layer, Marker, Source } from "react-map-gl";
 
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -214,6 +214,13 @@ function App() {
 
   const [drawingActive, setDrawingActive] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const drawPos = useRef({ x: 0, y: 0 });
+
+  const updateDrawPos = (e: React.MouseEvent) => {
+    const rect = canvas.current?.getBoundingClientRect();
+    drawPos.current.x = e.clientX - (rect?.left || 0);
+    drawPos.current.y = e.clientY - (rect?.top || 0);
+  };
 
   const handleSelectExistingBottle = (bottle: Bottle) => {
     setSelectedId(bottle.id);
@@ -368,7 +375,25 @@ function App() {
           <>
             <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
             <DialogContent>
-              <canvas ref={canvas} width={500} height={500}></canvas>
+              <canvas
+                ref={canvas}
+                width={500}
+                height={500}
+                onMouseMove={(e) => {
+                  const ctx = canvas.current?.getContext("2d");
+                  if (e.buttons !== 1 || !ctx) return;
+                  ctx.beginPath();
+                  ctx.lineWidth = 5;
+                  ctx.lineCap = "round";
+                  ctx.strokeStyle = "blue";
+                  ctx.moveTo(drawPos.current.x, drawPos.current.y);
+                  updateDrawPos(e);
+                  ctx.lineTo(drawPos.current.x, drawPos.current.y);
+                  ctx.stroke();
+                }}
+                onMouseDown={updateDrawPos}
+                onMouseEnter={updateDrawPos}
+              ></canvas>
             </DialogContent>
             <DialogActions>
               {drawingActive ? (
