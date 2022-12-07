@@ -1,13 +1,18 @@
 import {
   Box,
+  Button,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   SvgIcon,
   SvgIconProps,
   Typography,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Map, { Layer, Marker, Source } from "react-map-gl";
 
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -165,6 +170,10 @@ function App() {
 
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedBottle =
+    bottles.find((bottle) => bottle.id === selectedId) ?? null;
+
   /** Returns true if the bottle has no route for it to be on at date */
   const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
     const coveredDistance =
@@ -247,6 +256,29 @@ function App() {
     return [interpolatedLongitude, interpolatedLatitude];
   };
 
+  const [drawingActive, setDrawingActive] = useState(false);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const drawPos = useRef({ x: 0, y: 0 });
+
+  const updateDrawPos = (e: React.MouseEvent) => {
+    const rect = canvas.current?.getBoundingClientRect();
+    drawPos.current.x = e.clientX - (rect?.left || 0);
+    drawPos.current.y = e.clientY - (rect?.top || 0);
+  };
+
+  const handleSelectExistingBottle = (bottle: Bottle) => {
+    setSelectedId(bottle.id);
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.current?.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+      }
+    };
+    img.crossOrigin = "Anonymous";
+    img.src = `https://bottlz.azurewebsites.net/drawings/get/${bottle.id}`;
+  };
+
   const routeCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
     features: bottles
@@ -291,6 +323,7 @@ function App() {
                 key={bottle.id}
                 longitude={location[0]}
                 latitude={location[1]}
+                onClick={() => handleSelectExistingBottle(bottle)}
               >
                 <BottleIcon
                   sx={{
@@ -375,6 +408,55 @@ function App() {
 ]`}
         </pre> */}
       </Box>
+      <Dialog
+        open={selectedId !== null}
+        onClose={() => {
+          setSelectedId(null);
+          setDrawingActive(false);
+        }}
+      >
+        {selectedBottle && (
+          <>
+            <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
+            <DialogContent>
+              <canvas
+                ref={canvas}
+                width={500}
+                height={500}
+                onMouseMove={(e) => {
+                  const ctx = canvas.current?.getContext("2d");
+                  if (e.buttons !== 1 || !ctx) return;
+                  ctx.beginPath();
+                  ctx.lineWidth = 5;
+                  ctx.lineCap = "round";
+                  ctx.strokeStyle = "blue";
+                  ctx.moveTo(drawPos.current.x, drawPos.current.y);
+                  updateDrawPos(e);
+                  ctx.lineTo(drawPos.current.x, drawPos.current.y);
+                  ctx.stroke();
+                }}
+                onMouseDown={updateDrawPos}
+                onMouseEnter={updateDrawPos}
+              ></canvas>
+            </DialogContent>
+            <DialogActions>
+              {drawingActive ? (
+                <Button onClick={() => setDrawingActive(false)}>Save</Button>
+              ) : (
+                <Button onClick={() => setDrawingActive(true)}>Edit</Button>
+              )}
+              <Button
+                onClick={() => {
+                  setSelectedId(null);
+                  setDrawingActive(false);
+                }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }
