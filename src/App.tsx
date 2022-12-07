@@ -6,6 +6,7 @@ import {
   SvgIconProps,
   Typography,
 } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { useEffect, useState } from "react";
 import Map, { Layer, Marker, Source } from "react-map-gl";
 
@@ -73,6 +74,44 @@ function App() {
         );
       });
   }, []);
+
+  const [creatingBottle, setCreatingBottle] = useState(false);
+  const createBottle = async () => {
+    if (creatingBottle) return;
+    setCreatingBottle(true);
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { longitude: lon, latitude: lat } = position.coords;
+      fetch(`${BASE_URL}/bottles/create`, {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ location: { lon, lat } }),
+      })
+        .then(() => setCreatingBottle(false))
+        .catch((err) => {
+          console.log(err);
+          setCreatingBottle(false);
+        });
+    });
+  };
+
+  const [deletingBottles, setDeletingBottles] = useState(false);
+  const deleteBottles = async () => {
+    if (deletingBottles) return;
+    setDeletingBottles(true);
+    fetch(`${BASE_URL}/bottles/deleteAll`, {
+      method: "post",
+    })
+      .then(() => {
+        window.location.reload();
+        setDeletingBottles(false);
+      })
+      .catch((err) => {
+        console.log(err);
+        setDeletingBottles(false);
+      });
+  };
 
   const [currentDate, setCurrentDate] = useState(new Date());
   useEffect(() => {
@@ -220,6 +259,20 @@ function App() {
               </Marker>
             );
           })}
+        <Box
+          sx={{
+            position: "absolute",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            bottom: "30px",
+            backgroundColor: "white",
+            borderRadius: "10px",
+          }}
+        >
+          <LoadingButton loading={creatingBottle} onClick={createBottle}>
+            <Typography variant="inherit">Create Bottle</Typography>
+          </LoadingButton>
+        </Box>
       </Map>
       <Box display="flex" flexDirection="column" p={2} overflow="scroll">
         <Typography variant="h6" mb={1}>
@@ -255,6 +308,28 @@ function App() {
             label={id}
           />
         ))}
+        <br />
+        <Typography variant="h6">Admin</Typography>
+        <LoadingButton
+          loading={deletingBottles}
+          onClick={deleteBottles}
+          variant="contained"
+        >
+          <Typography variant="subtitle1">Delete All Bottles</Typography>
+        </LoadingButton>
+        {/* <Typography variant="body1">
+          Note: Please finish container setup by adding spatial indexing
+        </Typography>
+        <pre>
+          {`"spatialIndexes": [
+  {
+    "path": "/*",
+    "types": [
+      "Point"
+    ]
+  }
+]`}
+        </pre> */}
       </Box>
     </Box>
   );
