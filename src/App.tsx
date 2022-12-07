@@ -4,6 +4,7 @@ import {
   Checkbox,
   Dialog,
   DialogActions,
+  DialogContent,
   DialogTitle,
   FormControlLabel,
   SvgIcon,
@@ -11,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Map, { Layer, Marker, Source } from "react-map-gl";
 
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -211,6 +212,22 @@ function App() {
     return [interpolatedLongitude, interpolatedLatitude];
   };
 
+  const [drawingActive, setDrawingActive] = useState(false);
+  const canvas = useRef<HTMLCanvasElement>(null);
+
+  const handleSelectExistingBottle = (bottle: Bottle) => {
+    setSelectedId(bottle.id);
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.current?.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+      }
+    };
+    img.crossOrigin = "Anonymous";
+    img.src = `https://bottlz.azurewebsites.net/drawings/get/${bottle.id}`;
+  };
+
   const routeCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
     features: bottles
@@ -255,7 +272,7 @@ function App() {
                 key={bottle.id}
                 longitude={location[0]}
                 latitude={location[1]}
-                onClick={() => setSelectedId(bottle.id)}
+                onClick={() => handleSelectExistingBottle(bottle)}
               >
                 <BottleIcon
                   sx={{
@@ -340,17 +357,33 @@ function App() {
 ]`}
         </pre> */}
       </Box>
-      <Dialog open={selectedId !== null} onClose={() => setSelectedId(null)}>
+      <Dialog
+        open={selectedId !== null}
+        onClose={() => {
+          setSelectedId(null);
+          setDrawingActive(false);
+        }}
+      >
         {selectedBottle && (
           <>
             <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
-            <img
-              width="100%"
-              height="100%"
-              src={`https://bottlz.azurewebsites.net/drawings/get/${selectedId}`}
-            />
+            <DialogContent>
+              <canvas ref={canvas} width={500} height={500}></canvas>
+            </DialogContent>
             <DialogActions>
-              <Button onClick={() => setSelectedId(null)}>Close</Button>
+              {drawingActive ? (
+                <Button onClick={() => setDrawingActive(false)}>Save</Button>
+              ) : (
+                <Button onClick={() => setDrawingActive(true)}>Edit</Button>
+              )}
+              <Button
+                onClick={() => {
+                  setSelectedId(null);
+                  setDrawingActive(false);
+                }}
+              >
+                Close
+              </Button>
             </DialogActions>
           </>
         )}
