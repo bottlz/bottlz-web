@@ -137,7 +137,14 @@ function App() {
         },
         body: JSON.stringify({ location: { lon, lat } }),
       })
-        .then(() => setCreatingBottle(false))
+        .then((res) => res.json())
+        .then((json) => {
+          const newBottleId: string = json.id;
+          setCreatingBottle(false);
+          setSelectedId(newBottleId);
+          setDrawingActive(true);
+          setIsDrawingNew(true);
+        })
         .catch((err) => {
           console.log(err);
           setCreatingBottle(false);
@@ -171,8 +178,6 @@ function App() {
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selectedBottle =
-    bottles.find((bottle) => bottle.id === selectedId) ?? null;
 
   /** Returns true if the bottle has no route for it to be on at date */
   const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
@@ -257,6 +262,7 @@ function App() {
   };
 
   const [drawingActive, setDrawingActive] = useState(false);
+  const [isDrawingNew, setIsDrawingNew] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawPos = useRef({ x: 0, y: 0 });
 
@@ -276,7 +282,39 @@ function App() {
       }
     };
     img.crossOrigin = "Anonymous";
-    img.src = `https://bottlz.azurewebsites.net/drawings/get/${bottle.id}`;
+    img.src = `${BASE_URL}/drawings/get/${bottle.id}?time=${Date.now()}`;
+  };
+
+  const [savingDrawing, setSavingDrawing] = useState(false);
+
+  const updateDrawing = async (isDrawingNew: boolean) => {
+    if (savingDrawing) return;
+    setSavingDrawing(true);
+    canvas.current?.toBlob((blob) => {
+      if (!blob) {
+        console.error("Failed to create blob from canvas");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("drawing", blob);
+      fetch(
+        `${BASE_URL}/drawings/${
+          isDrawingNew ? "create" : "update"
+        }/${selectedId}`,
+        {
+          method: "post",
+          body: formData,
+        }
+      )
+        .then(() => {
+          setSavingDrawing(false);
+          setDrawingActive(false);
+        })
+        .catch((err) => {
+          console.log(err);
+          setSavingDrawing(false);
+        });
+    });
   };
 
   const routeCollection: GeoJSON.FeatureCollection = {
@@ -415,9 +453,11 @@ function App() {
           setDrawingActive(false);
         }}
       >
-        {selectedBottle && (
+        {selectedId && (
           <>
-            <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
+            <DialogTitle>
+              {isDrawingNew ? "Create" : "View/Edit"} ID: {selectedId}
+            </DialogTitle>
             <DialogContent>
               <canvas
                 ref={canvas}
@@ -425,7 +465,7 @@ function App() {
                 height={500}
                 onMouseMove={(e) => {
                   const ctx = canvas.current?.getContext("2d");
-                  if (e.buttons !== 1 || !ctx) return;
+                  if (!drawingActive || e.buttons !== 1 || !ctx) return;
                   ctx.beginPath();
                   ctx.lineWidth = 5;
                   ctx.lineCap = "round";
@@ -441,7 +481,12 @@ function App() {
             </DialogContent>
             <DialogActions>
               {drawingActive ? (
-                <Button onClick={() => setDrawingActive(false)}>Save</Button>
+                <LoadingButton
+                  loading={savingDrawing}
+                  onClick={() => updateDrawing(isDrawingNew)}
+                >
+                  Save
+                </LoadingButton>
               ) : (
                 <Button onClick={() => setDrawingActive(true)}>Edit</Button>
               )}
