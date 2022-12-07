@@ -287,7 +287,7 @@ function App() {
 
   const [savingDrawing, setSavingDrawing] = useState(false);
 
-  const createDrawing = async () => {
+  const updateDrawing = async (isDrawingNew: boolean) => {
     if (savingDrawing) return;
     setSavingDrawing(true);
     canvas.current?.toBlob((blob) => {
@@ -297,7 +297,7 @@ function App() {
       }
       const formData = new FormData();
       formData.append("drawing", blob);
-      fetch(`${BASE_URL}/drawings/create/${selectedId}`, {
+      fetch(`${BASE_URL}/drawings/${isDrawingNew ? "create" : "update"}/${selectedId}`, {
         method: "post",
         body: formData,
       })
@@ -478,11 +478,7 @@ function App() {
               {drawingActive ? (
                 <LoadingButton
                   loading={savingDrawing}
-                  onClick={() => {
-                    if (isDrawingNew) {
-                      createDrawing();
-                    }
-                  }}
+                  onClick={() => updateDrawing(isDrawingNew)}
                 >
                   Save
                 </LoadingButton>
