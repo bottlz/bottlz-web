@@ -1,6 +1,10 @@
 import {
   Box,
+  Button,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogTitle,
   FormControlLabel,
   SvgIcon,
   SvgIconProps,
@@ -120,6 +124,10 @@ function App() {
   });
 
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedBottle =
+    bottles.find((bottle) => bottle.id === selectedId) ?? null;
 
   /** Returns true if the bottle has no route for it to be on at date */
   const isOutOfRoutes = (bottle: Bottle, date: Date): boolean => {
@@ -247,6 +255,7 @@ function App() {
                 key={bottle.id}
                 longitude={location[0]}
                 latitude={location[1]}
+                onClick={() => setSelectedId(bottle.id)}
               >
                 <BottleIcon
                   sx={{
@@ -331,6 +340,21 @@ function App() {
 ]`}
         </pre> */}
       </Box>
+      <Dialog open={selectedId !== null} onClose={() => setSelectedId(null)}>
+        {selectedBottle && (
+          <>
+            <DialogTitle>Bottle ID: {selectedBottle.id}</DialogTitle>
+            <img
+              width="100%"
+              height="100%"
+              src={`https://bottlz.azurewebsites.net/drawings/get/${selectedId}`}
+            />
+            <DialogActions>
+              <Button onClick={() => setSelectedId(null)}>Close</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }
