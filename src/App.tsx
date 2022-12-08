@@ -337,6 +337,10 @@ function App() {
       sx={{
         display: "flex",
         height: window.innerHeight,
+        flexDirection: {
+          xs: "column",
+          sm: "row",
+        },
       }}
     >
       <Map
@@ -389,7 +393,13 @@ function App() {
           </LoadingButton>
         </Box>
       </Map>
-      <Box display="flex" flexDirection="column" p={2} overflow="scroll">
+      <Box
+        display="flex"
+        flexDirection="column"
+        p={2}
+        overflow="scroll"
+        sx={{ height: { xs: "35%", sm: "100%" } }}
+      >
         <Typography variant="h6" mb={1}>
           Bottle Count: {bottles.length}
         </Typography>
